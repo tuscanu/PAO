@@ -2,35 +2,24 @@ import Classes.Category;
 import Classes.Distributor;
 import Classes.Product;
 import Classes.Stock;
-import Services.StoreService;
+import Implement.StoreServiceImpl;
+import Service.StoreServiceInterface;
+import Service.ReadService;
+import Service.WriteService;
 
+import java.util.List;
 import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
+        // Creare serviciu de magazin
+        StoreServiceInterface storeService = StoreServiceImpl.getInstance();
 
-        StoreService storeService = new StoreService();
-
-        //Adaugare produse si distribuitori pentru a testa
-        Category electronics = new Category("Electronice");
-        Category clothing = new Category("Imbracaminte");
-
-        Distributor distributor1 = new Distributor("Emag");
-        Distributor distributor2 = new Distributor("Amazon");
-
-        Product laptop = new Product("Laptop", 1500.0, electronics);
-        Product shirt = new Product("Camasa", 50.0, clothing);
-
-        // Adaugare stoc la produse
-        Stock laptopStock = new Stock("Laptop", 1500.0, electronics, 10);
-        Stock shirtStock = new Stock("Camasa", 50.0, clothing, 20);
-
-        storeService.addStock(laptopStock);
-        storeService.addStock(shirtStock);
-
-        // Adăugare nume pentru distribuitori
-        storeService.addDistributor("Emag", distributor1);
-        storeService.addDistributor("Amazon", distributor2);
+        // Incarcare date din fisiere
+        loadCategories(storeService);
+        loadDistributors(storeService);
+        loadProducts(storeService);
+        loadStocks(storeService);
 
         // Testare
         System.out.println("Lista de stocuri:");
@@ -41,6 +30,47 @@ public class Main {
         System.out.println("\nMapa de distribuitori:");
         for (Map.Entry<String, Distributor> entry : storeService.getDistributorMap().entrySet()) {
             System.out.println("Nume: " + entry.getKey() + ", Distribuitor: " + entry.getValue().getName());
+        }
+
+        // Testare înregistrare în fișier de audit
+        WriteService.getInstance().write("audit.csv", "Afisare stocuri");
+    }
+
+    private static void loadCategories(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> categoriesData = readerService.read("src/Classes/category.csv");
+        for (String[] categoryData : categoriesData) {
+            storeService.addCategory(new Category(categoryData[0]));
+        }
+    }
+
+    private static void loadDistributors(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> distributorsData = readerService.read("src/Classes/distributor.csv");
+        for (String[] distributorData : distributorsData) {
+            storeService.addDistributor(distributorData[0], new Distributor(distributorData[0]));
+        }
+    }
+
+    private static void loadProducts(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> productsData = readerService.read("src/Classes/product.csv");
+        for (String[] productData : productsData) {
+            Category category = storeService.getCategoryByName(productData[2]);
+            if (category != null) {
+                storeService.addProduct(new Product(productData[0], Double.parseDouble(productData[1]), category));
+            }
+        }
+    }
+
+    private static void loadStocks(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> stocksData = readerService.read("src/Classes/stock.csv");
+        for (String[] stockData : stocksData) {
+            Category category = storeService.getCategoryByName(stockData[2]);
+            if (category != null) {
+                storeService.addStock(new Stock(stockData[0], Double.parseDouble(stockData[1]), category, Integer.parseInt(stockData[3])));
+            }
         }
     }
 }
