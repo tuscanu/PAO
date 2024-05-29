@@ -1,0 +1,77 @@
+Etapa 2 proiect PAO
+import Classes.Category;
+import Classes.Distributor;
+import Classes.Product;
+import Classes.Stock;
+import Implement.StoreServiceImpl;
+import Service.StoreServiceInterface;
+import Service.ReadService;
+import Service.WriteService;
+
+import java.util.List;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) {
+        // Creare serviciu de magazin
+        StoreServiceInterface storeService = StoreServiceImpl.getInstance();
+
+        // Incarcare date din fisiere
+        loadCategories(storeService);
+        loadDistributors(storeService);
+        loadProducts(storeService);
+        loadStocks(storeService);
+
+        // Testare
+        System.out.println("Lista de stocuri:");
+        for (Stock stock : storeService.getStockList()) {
+            System.out.println("Produs: " + stock.getName() + ", Cantitate: " + stock.getQuantity());
+        }
+
+        System.out.println("\nMapa de distribuitori:");
+        for (Map.Entry<String, Distributor> entry : storeService.getDistributorMap().entrySet()) {
+            System.out.println("Nume: " + entry.getKey() + ", Distribuitor: " + entry.getValue().getName());
+        }
+
+        // Testare înregistrare în fișier de audit
+        WriteService.getInstance().write("audit.csv", "Afisare stocuri");
+    }
+
+    private static void loadCategories(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> categoriesData = readerService.read("src/Classes/category.csv");
+        for (String[] categoryData : categoriesData) {
+            storeService.addCategory(new Category(categoryData[0]));
+        }
+    }
+
+    private static void loadDistributors(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> distributorsData = readerService.read("src/Classes/distributor.csv");
+        for (String[] distributorData : distributorsData) {
+            storeService.addDistributor(distributorData[0], new Distributor(distributorData[0]));
+        }
+    }
+
+    private static void loadProducts(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> productsData = readerService.read("src/Classes/product.csv");
+        for (String[] productData : productsData) {
+            Category category = storeService.getCategoryByName(productData[2]);
+            if (category != null) {
+                storeService.addProduct(new Product(productData[0], Double.parseDouble(productData[1]), category));
+            }
+        }
+    }
+
+    private static void loadStocks(StoreServiceInterface storeService) {
+        ReadService readerService = ReadService.getInstance();
+        List<String[]> stocksData = readerService.read("src/Classes/stock.csv");
+        for (String[] stockData : stocksData) {
+            Category category = storeService.getCategoryByName(stockData[2]);
+            if (category != null) {
+                storeService.addStock(new Stock(stockData[0], Double.parseDouble(stockData[1]), category, Integer.parseInt(stockData[3])));
+            }
+        }
+    }
+}
